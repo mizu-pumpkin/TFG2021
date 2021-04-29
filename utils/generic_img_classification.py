@@ -2,6 +2,9 @@
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
+
+import matplotlib.pyplot as plt
 
 def accuracy(outputs, labels):
     _, preds = torch.max(outputs, dim=1)

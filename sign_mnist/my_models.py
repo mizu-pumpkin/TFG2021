@@ -33,15 +33,32 @@ class ImageClassificationBase(nn.Module):
     def epoch_end(self, epoch, result):
         print("Epoch [{}], val_loss: {:.4f}, val_acc: {:.4f}".format(epoch, result['val_loss'], result['val_acc']))
 
+#   █░░ █ █▄░█ █▀▀ ▄▀█ █▀█   █▀█ █▀▀ █▀▀ █▀█ █▀▀ █▀ █▀ █ █▀█ █▄░█
+#   █▄▄ █ █░▀█ ██▄ █▀█ █▀▄   █▀▄ ██▄ █▄█ █▀▄ ██▄ ▄█ ▄█ █ █▄█ █░▀█
+
+class LinearRegressionModel(ImageClassificationBase):
+    # we instantiate the weights and biases using nn.Linear
+    def __init__(self, in_channels, num_classes):
+        super().__init__()
+        self.in_channels = in_channels
+        self.linear = nn.Linear(in_channels, num_classes)
+    
+    # the forward method is invoked when we pass a batch of inputs to the model
+    def forward(self, xb):
+        # we flatten the input tensor and pass it into self.linear
+        xb = xb.reshape(-1, self.in_channels)
+        out = self.linear(xb)
+        return out
+
 #   █▀▀ █▄░█ █▄░█
 #   █▄▄ █░▀█ █░▀█
 
-class SignMnistCNNModel(ImageClassificationBase):
-    def __init__(self):
+class CNNModel(ImageClassificationBase):
+    def __init__(self, in_channels, num_classes):
         super().__init__()
         self.network = nn.Sequential(
             # input: 1 x 28 x 28
-            nn.Conv2d(1, 32, kernel_size=3, padding=1),
+            nn.Conv2d(in_channels, 32, kernel_size=3, padding=1),
             nn.ReLU(),
             nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1),
             nn.ReLU(),
@@ -58,7 +75,7 @@ class SignMnistCNNModel(ImageClassificationBase):
             nn.ReLU(),
             nn.Linear(1024, 512),
             nn.ReLU(),
-            nn.Linear(512, 26))
+            nn.Linear(512, num_classes))
         
     def forward(self, xb):
         return self.network(xb)
