@@ -12,6 +12,10 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 
+from collections import deque
+import statistics
+from statistics import mode
+
 #   █▀▄▀█ █▀█ █▀▄ █▀▀ █░░
 #   █░▀░█ █▄█ █▄▀ ██▄ █▄▄
 
@@ -41,22 +45,41 @@ def predict_sign(sign):
     _, preds = torch.max(yb, dim=1)
     return chr(preds[0].item() + 65)
 
-cv.namedWindow("ASL classifier")
-cv.moveWindow('ASL classifier', 0, 0)
-    
+def nothing(x):
+    pass
+
+mainWindowName = 'ASL classifier'
+cv.namedWindow(mainWindowName)
+cv.moveWindow(mainWindowName, 0, 0)
+cv.createTrackbar('umbral', mainWindowName, 100, 255, nothing)
+  
 x1, y1, wh = 300, 100, 28*10
 x2, y2 = x1+wh, y1+wh
+history = deque(maxlen=5)
+first = False
 
 for key, frame in autoStream():
     # Flip frame horizontally so the app is easier to use
     frame = cv.flip(frame, 1)
-    # Predict what's in the ROI
+    # Extract information from ROI and background
     roi = frame[y1:y2, x1:x2]
-    prediction = predict_sign(roi)
-    cv.imshow('ROI', cv.cvtColor(roi, cv.COLOR_BGR2GRAY))
-    # Show prediction and frame
+    if first == False:
+        first = True
+        bg = roi
+    cv.imshow('ROI', roi)
+    # Generate mask
+    mask = np.sum(cv.absdiff(bg,roi), axis=2) > cv.getTrackbarPos('umbral', mainWindowName)
+    cv.imshow('Mask', np.uint8(mask)*255)
+    # Extract hand with mask
+    hand = np.zeros([280,280,3],dtype=np.uint8)
+    hand.fill(255)
+    np.copyto( hand, roi, where = np.expand_dims(mask,axis=2) )
+    cv.imshow('Hand', cv.cvtColor(np.uint8(hand), cv.COLOR_BGR2GRAY))
+    # Show prediction based on a k-frame history
+    history.append(predict_sign(hand))
+    prediction = mode(history)
     putText(frame, 'Prediction: '+prediction, orig=(x1,y1-8))
     cv.rectangle(frame, (x1,y1-1), (x2,y2-1), color=(0,255,255), thickness=2)
-    cv.imshow('ASL classifier', frame)
+    cv.imshow(mainWindowName, frame)
 
 cv.destroyAllWindows()
