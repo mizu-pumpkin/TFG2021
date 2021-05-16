@@ -9,11 +9,8 @@ from umucv.util import putText
 import torch
 import cv2 as cv
 import numpy as np
-import matplotlib
-import matplotlib.pyplot as plt
 
 from collections import deque
-import statistics
 from statistics import mode
 
 #   █▀▄▀█ █▀█ █▀▄ █▀▀ █░░
